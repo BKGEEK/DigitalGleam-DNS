@@ -1,79 +1,74 @@
-# 数星DNS 管理系统
+﻿# 数星DNS / DGDNS
 
-这是一个基于 Go 语言开发的轻量级、高可用专属 DNS 系统。它提供完整的 Web 管理界面、安全的 RESTful API 接口，并支持 MySQL 主从同步与 NOTIFY 主动推送机制，适用于企业内网 DNS 解析、域名验证与自动化运维场景。
+一套基于 Go + MySQL 的轻量 DNS 管理系统，支持 Web 后台、API 管理和常见 DNS 记录解析。
 
-## 核心功能
+## 项目简介
 
-- 安全可靠：Web 界面强制管理员登录（bcrypt 加密），API 接口采用 X-API-Key 密钥认证（SHA-256 哈希存储）。
-- 主从同步：支持 MySQL 主从复制，主库变更后可通过 NOTIFY 机制毫秒级推送到从库。
-- Web 管理：基于 Bootstrap 的现代化管理后台，支持 DNS 记录增删改查及 API 密钥生命周期管理。
-- RESTful API：提供完整的 API 接口，方便对接 CI/CD 流程、自动化脚本或第三方平台（如 Let's Encrypt DNS-01 验证）。
-- 高性能：基于 `miekg/dns` 库开发，响应 UDP 53 端口请求，轻量高效。
+本项目提供：
 
-## 项目目录结构
+- DNS 权威解析服务
+- Web 后台管理界面
+- API 密钥管理与接口调用
+- MySQL 数据库存储
+- 主从同步相关配置
+
+## 功能特性
+
+- 支持常见 DNS 记录：A、AAAA、CNAME、MX、NS、TXT、SOA、SRV、PTR
+- 支持 Web 页面增删改查 DNS 记录
+- 支持 API 方式管理记录
+- 支持管理员登录与初始化
+- 支持 TTL、Priority 等字段
+- 支持 MySQL 数据持久化
+
+## 项目结构
 
 ```text
-mydns/
-├── go.mod         # Go 依赖配置文件
-├── main.go        # 程序入口
-├── config.go      # 配置文件读取逻辑
-├── db.go          # 数据库连接与主从同步配置
-├── dns_server.go  # DNS 核心解析服务
-├── api.go         # 带密钥认证的 RESTful API
-├── web.go         # 带登录认证的 Web 管理界面
-├── config.yaml    # 运行配置文件
-├── init.sql       # 数据库初始化脚本
-└── install.sh     # 一键自动化部署脚本
+dgdns/
+├── api.go
+├── config.go
+├── config.yaml
+├── db.go
+├── dns_server.go
+├── init.sql
+├── install.sh
+├── main.go
+├── README.md
+└── web.go
 ```
 
-## 快速部署指南
+## 环境要求
 
-### 1. 环境要求
+- Go 1.21+
+- MySQL 8.0+
+- 常见的 Linux 和 Unix 发行版
+- root 权限（用于安装脚本部署）
 
-- 操作系统：Linux（推荐 Ubuntu 20.04+ / Debian 11+ / CentOS 7+）
-- 数据库：MySQL 8.0+（主从同步功能依赖较新版本特性）
-- 运行环境：Go 1.21+
+## 快速开始
 
-### 2. 一键安装
+### 1. 配置数据库
 
-在项目根目录下直接执行自动化部署脚本：
-
-```bash
-chmod +x install.sh
-sudo bash install.sh
-```
-
-脚本会自动安装依赖、编译程序、配置 Systemd 服务并启动 DNS 与 Web 服务。
-
-### 3. 配置文件说明（`config.yaml`）
-
-启动前，请根据实际环境修改 `config.yaml`：
+先修改 `config.yaml`：
 
 ```yaml
-role: master # 当前节点角色：master（主）或 slave（从）
+role: master
 
 database:
   host: 127.0.0.1
   port: 3306
   user: root
-  password: your_db_password # 修改为你的数据库密码
+  password: your_db_password
   dbname: dns_db
+```
 
-replication:
-  # 主库配置：允许哪些从库 IP 拉取数据并接收 NOTIFY 通知
-  allowed_slaves:
-    - 192.168.1.101
-  notify_slaves:
-    - 192.168.1.101
-  # 从库配置：如果当前角色是 slave，请填写主库 IP 和账号信息
-  master_host: 192.168.1.100
-  master_port: 3306
-  master_user: repl_user
-  master_password: repl_password
+### 2. 初始化数据库
 
-dns:
-  port: 53   # DNS 解析监听端口
-  ttl: 300   # 默认 TTL 时间
+执行 `init.sql` 创建表结构。
+
+### 3. 一键部署
+
+```bash
+sudo bash install.sh
 ```
 
 ## 使用指南
@@ -101,18 +96,74 @@ curl -X GET http://你的服务器IP:8081/api/records \
   -H "X-API-Key: 你的API密钥"
 ```
 
-添加一条 DNS 记录：
+常见记录格式示例：
+
+- `A`：`value=1.2.3.4`
+- `AAAA`：`value=2001:db8::1`
+- `CNAME`：`value=target.example.com.`
+- `MX`：`value=mail.example.com.`，`priority=10`
+- `NS`：`value=ns1.example.com.`
+- `TXT`：`value=verification-token`
+- `SOA`：`value=ns1.example.com. admin.example.com. 2026053101 3600 600 604800 300`
+- `SRV`：`value=10 20 443 service.example.com.`
+- `PTR`：`value=host.example.com.`
+
+每种记录的 API 添加示例：
 
 ```bash
+# A 记录
 curl -X POST http://你的服务器IP:8081/api/records/add \
   -H "X-API-Key: 你的API密钥" \
   -H "Content-Type: application/json" \
-  -d '{
-    "zone": "example.com",
-    "host": "www",
-    "record_type": "TXT",
-    "value": "dns-verification-token-12345"
-  }'
+  -d '{"zone":"example.com","host":"www","record_type":"A","value":"1.2.3.4","ttl":300,"priority":0}'
+
+# AAAA 记录
+curl -X POST http://你的服务器IP:8081/api/records/add \
+  -H "X-API-Key: 你的API密钥" \
+  -H "Content-Type: application/json" \
+  -d '{"zone":"example.com","host":"ipv6","record_type":"AAAA","value":"2001:db8::1","ttl":300,"priority":0}'
+
+# CNAME 记录
+curl -X POST http://你的服务器IP:8081/api/records/add \
+  -H "X-API-Key: 你的API密钥" \
+  -H "Content-Type: application/json" \
+  -d '{"zone":"example.com","host":"blog","record_type":"CNAME","value":"target.example.com.","ttl":300,"priority":0}'
+
+# MX 记录
+curl -X POST http://你的服务器IP:8081/api/records/add \
+  -H "X-API-Key: 你的API密钥" \
+  -H "Content-Type: application/json" \
+  -d '{"zone":"example.com","host":"@","record_type":"MX","value":"mail.example.com.","ttl":300,"priority":10}'
+
+# NS 记录
+curl -X POST http://你的服务器IP:8081/api/records/add \
+  -H "X-API-Key: 你的API密钥" \
+  -H "Content-Type: application/json" \
+  -d '{"zone":"example.com","host":"@","record_type":"NS","value":"ns1.example.com.","ttl":300,"priority":0}'
+
+# TXT 记录
+curl -X POST http://你的服务器IP:8081/api/records/add \
+  -H "X-API-Key: 你的API密钥" \
+  -H "Content-Type: application/json" \
+  -d '{"zone":"example.com","host":"verify","record_type":"TXT","value":"verification-token","ttl":300,"priority":0}'
+
+# SOA 记录
+curl -X POST http://你的服务器IP:8081/api/records/add \
+  -H "X-API-Key: 你的API密钥" \
+  -H "Content-Type: application/json" \
+  -d '{"zone":"example.com","host":"@","record_type":"SOA","value":"ns1.example.com. admin.example.com. 2026053101 3600 600 604800 300","ttl":300,"priority":0}'
+
+# SRV 记录
+curl -X POST http://你的服务器IP:8081/api/records/add \
+  -H "X-API-Key: 你的API密钥" \
+  -H "Content-Type: application/json" \
+  -d '{"zone":"example.com","host":"_sip._tcp","record_type":"SRV","value":"10 20 443 service.example.com.","ttl":300,"priority":0}'
+
+# PTR 记录
+curl -X POST http://你的服务器IP:8081/api/records/add \
+  -H "X-API-Key: 你的API密钥" \
+  -H "Content-Type: application/json" \
+  -d '{"zone":"in-addr.arpa","host":"4.3.2.1","record_type":"PTR","value":"host.example.com.","ttl":300,"priority":0}'
 ```
 
 删除一条 DNS 记录：
@@ -128,16 +179,16 @@ curl -X POST http://你的服务器IP:8081/api/records/delete \
 
 ```bash
 # 查看服务运行状态
-systemctl status mydns
+systemctl status dgdns
 
 # 查看实时运行日志
-journalctl -u mydns -f
+journalctl -u dgdns -f
 
 # 重启服务
-systemctl restart mydns
+systemctl restart dgdns
 
 # 停止服务
-systemctl stop mydns
+systemctl stop dgdns
 ```
 
 ## 注意事项
@@ -149,5 +200,5 @@ systemctl stop mydns
 ## 版权声明
 
 Digitalgleam 版权所有，盗版必究。
-### 如您遇到疑问cue我
+### 如您遇到疑问 cue 我
 QQ 3799599152

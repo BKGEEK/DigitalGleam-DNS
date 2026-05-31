@@ -1,0 +1,30 @@
+﻿CREATE DATABASE IF NOT EXISTS dns_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE dns_db;
+
+CREATE TABLE IF NOT EXISTS admins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL COMMENT '密钥备注名称',
+    key_hash VARCHAR(64) NOT NULL COMMENT 'SHA-256 哈希值',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP NULL COMMENT '最后使用时间',
+    INDEX idx_key_hash (key_hash)
+);
+
+CREATE TABLE IF NOT EXISTS dns_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    zone VARCHAR(255) NOT NULL,
+    host VARCHAR(255) NOT NULL,
+    record_type VARCHAR(10) NOT NULL,
+    value VARCHAR(1024) NOT NULL,
+    ttl INT NOT NULL DEFAULT 300,
+    priority INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_zone_host_type (zone, host, record_type)
+);
