@@ -51,14 +51,37 @@ dgdns/
 先修改 `config.yaml`：
 
 ```yaml
+# 角色配置：master（主）或 slave（从）
 role: master
 
+# 数据库配置
 database:
   host: 127.0.0.1
   port: 3306
   user: root
   password: your_db_password
   dbname: dns_db
+
+# 主从同步配置（如果没有从服务器就整段删掉）
+replication:
+  slave_user: repl_user
+  slave_password: repl_password
+  allowed_slaves:
+    - 192.168.1.101
+    - 192.168.1.102
+  notify_slaves:
+    - 192.168.1.101
+    - 192.168.1.102
+  master_host: 192.168.1.100
+  master_port: 3306
+  master_user: repl_user
+  master_password: repl_password
+
+# DNS 服务配置
+dns:
+  port: 53
+  ttl: 3600
+
 ```
 
 ### 2. 一键部署
