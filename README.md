@@ -61,11 +61,7 @@ database:
   dbname: dns_db
 ```
 
-### 2. 初始化数据库
-
-执行 `init.sql` 创建表结构。
-
-### 3. 一键部署
+### 2. 一键部署
 
 ```bash
 sudo bash install.sh
