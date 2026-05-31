@@ -149,4 +149,6 @@ systemctl stop mydns
 ## 版权声明
 
 Digitalgleam 版权所有，盗版必究。
-如您遇到疑问cue我[QQ](https://wpa.qq.com/msgrd?v=3&uin=3799599152&site=qq&menu=yes) 。
+### 如您遇到疑问cue我
+💻 PC 用户：[点击添加 QQ 好友](tencent://AddContact/?fromId=45&fromSubId=1&subcmd=all&uin=3799599152)
+📱 手机用户：[点击打开 QQ 资料卡](mqqapi://card/show_pslcard?src_type=internal&version=1&uin=3799599152&card_type=person&source=sharecard)
